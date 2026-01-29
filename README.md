@@ -1,6 +1,40 @@
 # Moltbot (Coolify Edition)
 
-This is a production-grade setup for running **Moltbot**—your personal agentic coding assistant—on Coolify. It supports multi-agent workflows, Docker sandboxing, and integration with WhatsApp, Telegram, and more.
+**Your Complete Autonomous AI Office.**
+
+This isn't just a chatbot—it's a full-fledged **AI Workforce** running in your own private cloud (Coolify). It manages staff (agents), remembers corporate knowledge, and can even open its own doors to the public web.
+
+---
+
+## 🏢 Architecture: The AI Office
+
+Think of this Docker container not as an app, but as an **Office Building**.
+
+### 1. The Staff (Multi-Agent System)
+*   **The Manager (Gateway)**: The main `moltbot` process. It hires "staff" to do work.
+*   **The Workers (Sandboxes)**: When you ask for a complex coding task, the Manager spins up **isolated Docker containers** (sub-agents).
+    *   They have their own Linux tools (Python, Node, Go).
+    *   They work safely in a sandbox, then report back.
+    *   *Managed via: Docker Socket Proxy (Secure Sidecar).*
+
+### 2. Corporate Memory (Long-Term Storage)
+Your office never forgets, thanks to a 3-tier memory architecture:
+*   **The Filing Cabinet (`moltbot-workspace`)**: A persistent Docker Volume where agents write code, save files, and store heavy data. Survives restarts.
+*   **The Brain (Internal SQLite)**: Moltbot's native transactional memory for conversations and facts.
+*   **The Library (Qdrant)**: A dedicated Vector Database service (`qdrant:6333`) for building advanced RAG (Retrieval Augmented Generation) apps.
+
+### 3. The Public Front Door (Cloudflare Tunnel)
+Need to show a client your work?
+*   The agent can start a web server (e.g., Next.js on port 3000).
+*   It uses `cloudflared` to instantly create a **secure public URL** (e.g., `https://project-viz.trycloudflare.com`).
+*   No router port forwarding required.
+
+### 4. Zero-Config & Production Ready
+*   **Pre-installed Tools**: `gh` (GitHub), `vercel`, `bun`, `python`, `ripgrep`.
+*   **Secure**: All sub-agents are firewalled.
+*   **Self-Healing**: Docker volumes ensure `moltbot-config` and `moltbot-workspace` persist forever.
+
+---
 
 ## 🚀 Easy Setup on Coolify
 
