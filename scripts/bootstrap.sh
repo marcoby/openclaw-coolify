@@ -39,6 +39,7 @@ POSSIBLE_PATHS=(
   "/root/.moltbot/bin"
   "/root/.local/bin"
   "/home/node/.bun/bin"
+  "/root/.bun/install/global/bin"
 )
 
 # Function to rescue a binary

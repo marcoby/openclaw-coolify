@@ -71,7 +71,8 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 # Note: Bun install script works better with unzip
 RUN apt-get update && apt-get install -y unzip && rm -rf /var/lib/apt/lists/* && \
     curl -fsSL https://bun.sh/install | bash
-ENV PATH="/root/.bun/bin:${PATH}"
+ENV BUN_INSTALL="/root/.bun"
+ENV PATH="/root/.bun/bin:/root/.bun/install/global/bin:${PATH}"
 
 # Install Vercel & Marp (Slides) & QMD (Search)
 # Node & NPM are already provided by base image
@@ -111,7 +112,16 @@ ENV MOLT_BOT_BETA=${MOLT_BOT_BETA} \
 # Install Moltbot (as root, installs to /usr/local/bin or similar usually, need to check install.sh behavior or assume standard)
 # Actually the install script might try to install to ~/.npm-global if not root. As root, it might install to /usr/local/bin. 
 # We'll install to a fixed path or rely on PATH.
-RUN curl -fsSL https://molt.bot/install.sh | bash
+RUN curl -fsSL https://molt.bot/install.sh | bash && \
+    if command -v moltbot >/dev/null 2>&1; then \
+    echo "✅ moltbot binary found"; \
+    elif command -v clawdbot >/dev/null 2>&1; then \
+    echo "🔁 clawdbot found, creating moltbot alias"; \
+    ln -sf "$(command -v clawdbot)" /usr/local/bin/moltbot; \
+    else \
+    echo "❌ Moltbot install failed (no clawdbot or moltbot found)"; \
+    exit 1; \
+    fi
 
 # Install AI Tool Suite (globally as root)
 RUN bun install -g @openai/codex @google/gemini-cli opencode-ai && \
