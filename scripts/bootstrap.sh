@@ -5,16 +5,7 @@ OPENCLAW_STATE="/root/.openclaw"
 CONFIG_FILE="$OPENCLAW_STATE/openclaw.json"
 WORKSPACE_DIR="/root/openclaw-workspace"
 
-# ----------------------------
-# Memory: add swap if missing
-# ----------------------------
-if [ "$(free -m | awk '/Swap/ {print $2}')" -eq 0 ]; then
-  echo "🧠 No swap detected. Creating 2GB swap..."
-  fallocate -l 2G /swapfile 2>/dev/null || dd if=/dev/zero of=/swapfile bs=1M count=2048
-  chmod 600 /swapfile
-  mkswap /swapfile >/dev/null
-  swapon /swapfile >/dev/null
-fi
+
 
 mkdir -p "$OPENCLAW_STATE" "$WORKSPACE_DIR"
 chmod 700 "$OPENCLAW_STATE"
