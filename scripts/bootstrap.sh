@@ -43,10 +43,16 @@ seed_agent() {
     return 0
   fi
 
-  # ✅ MAIN agent gets ORIGINAL repo SOUL.md
-  if [ "$id" = "main" ] && [ -f "./SOUL.md" ]; then
-    echo "✨ Copying original SOUL.md to $dir"
-    cp "./SOUL.md" "$dir/SOUL.md"
+  # ✅ MAIN agent gets ORIGINAL repo SOUL.md and BOOTSTRAP.md
+  if [ "$id" = "main" ]; then
+    if [ -f "./SOUL.md" ] && [ ! -f "$dir/SOUL.md" ]; then
+      echo "✨ Copying original SOUL.md to $dir"
+      cp "./SOUL.md" "$dir/SOUL.md"
+    fi
+    if [ -f "./BOOTSTRAP.md" ] && [ ! -f "$dir/BOOTSTRAP.md" ]; then
+      echo "🚀 Seeding BOOTSTRAP.md to $dir"
+      cp "./BOOTSTRAP.md" "$dir/BOOTSTRAP.md"
+    fi
     return 0
   fi
 
@@ -58,6 +64,29 @@ EOF
 }
 
 seed_agent "main" "OpenClaw"
+
+# ----------------------------
+# Generate Config with Prime Directive
+# ----------------------------
+if [ ! -f "$CONFIG_FILE" ]; then
+  echo "🏥 Generating openclaw.json with Prime Directive..."
+  TOKEN=$(openssl rand -hex 24 2>/dev/null || node -e "console.log(require('crypto').randomBytes(24).toString('hex'))")
+  cat >"$CONFIG_FILE" <<EOF
+{
+  "gateway": {
+    "auth": { "mode": "token", "token": "$TOKEN" }
+  },
+  "agents": {
+    "defaults": {
+      "systemPrompt": "🧠 PRIME DIRECTIVE: You are OpenClaw, a Runtime Orchestrator. 1. You access Docker only via tcp://docker-proxy:2375. 2. You only manage containers labeled SANDBOX_CONTAINER=true or openclaw.managed=true. 3. NEVER run 'docker build' or 'docker push' — these are forbidden. Refer to SOUL.md and BOOTSTRAP.md for operational details."
+    },
+    "list": [
+      { "id": "main", "name": "OpenClaw", "workspace": "$WORKSPACE_DIR" }
+    ]
+  }
+}
+EOF
+fi
 
 # ----------------------------
 # Export state
