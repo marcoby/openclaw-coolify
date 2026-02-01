@@ -18,6 +18,45 @@ Unlike SaaS assistants where your data lives on someone else’s servers, OpenCl
 
 ---
 
+## 🧱 Prebuilt Image Workflow (Recommended for Productization)
+
+This repo includes a GitHub Actions workflow that builds and publishes a Docker image to GHCR:
+- Image: `ghcr.io/<org-or-user>/openclaw-coolify:latest`
+- Tags: `latest`, `vX.Y.Z`, and commit `sha`
+
+### 1) Enable GitHub Packages
+Ensure GitHub Packages is enabled for your org/user (default on GHCR).
+
+### 2) Push to GitHub
+Every push to `main` publishes a new image.
+
+### 3) Tell Coolify which image to pull
+Set this environment variable in Coolify:
+- `OPENCLAW_IMAGE=ghcr.io/<org-or-user>/openclaw-coolify:latest`
+
+This avoids long build times inside Coolify.
+
+---
+
+## ✅ Coolify Environment Variables (Required for Deploy)
+
+Set these in **Coolify > Service > Environment Variables** (no `.env` file is used in Coolify).
+
+**Required secrets**
+- `SERVICE_BASE64_REGISTRY` — random 32+ bytes, base64
+- `SERVICE_BASE64_SEARXNG` — random 32+ bytes, base64
+
+**At least one model key**
+- `OPENAI_API_KEY` (or use `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `MINIMAX_API_KEY`, `KIMI_API_KEY`, `OPENCODE_API_KEY`)
+
+**Optional**
+- `TELEGRAM_BOT_TOKEN`
+- `CF_TUNNEL_TOKEN`
+- `GITHUB_TOKEN`, `GITHUB_USERNAME`, `GITHUB_EMAIL`
+- `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`
+
+---
+
 ## 📦 Post-Deployment (Ready)
 Once the container is running and healthy:
 

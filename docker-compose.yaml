@@ -7,6 +7,9 @@ services:
     environment:
       REGISTRY_HTTP_SECRET: ${SERVICE_BASE64_REGISTRY}
   openclaw:
+    # Use prebuilt image (recommended for production):
+    # image: ${OPENCLAW_IMAGE:-ghcr.io/your-org/openclaw-coolify:latest}
+    # OR build from source (slower, but works immediately):
     build:
       context: .
       args:
@@ -16,8 +19,6 @@ services:
       nofile:
         soft: 65535
         hard: 65535
-    env_file:
-      - .env
     environment:
       DOCKER_HOST: tcp://docker-proxy:2375
       OPENCLAW_ENABLE_WEBHOOK_PROXY: "1"
@@ -78,6 +79,9 @@ services:
       GITHUB_EMAIL: ${GITHUB_EMAIL}
       # Optional
       OPENCLAW_BETA: ${OPENCLAW_BETA:-false}
+
+    ports:
+      - "18789:18789"
 
     volumes:
       - openclaw-config:/root/.openclaw

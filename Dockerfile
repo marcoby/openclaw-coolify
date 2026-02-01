@@ -50,11 +50,12 @@ RUN curl -L "https://go.dev/dl/go1.23.4.linux-amd64.tar.gz" -o go.tar.gz && \
     rm go.tar.gz
 ENV PATH="/usr/local/go/bin:${PATH}"
 
-# Install Cloudflare Tunnel (cloudflared)
-RUN ARCH=$(dpkg --print-architecture) && \
-    curl -L --output cloudflared.deb "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-${ARCH}.deb" && \
-    dpkg -i cloudflared.deb && \
-    rm cloudflared.deb
+# Install Cloudflare Tunnel (cloudflared) - removed for managed hosting
+# Not needed when using Coolify + host-level tunnels
+# RUN ARCH=$(dpkg --print-architecture) && \
+#     curl -L --output cloudflared.deb "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-${ARCH}.deb" && \
+#     dpkg -i cloudflared.deb && \
+#     rm cloudflared.deb
 
 # Install GitHub CLI (gh)
 RUN mkdir -p -m 755 /etc/apt/keyrings && \
