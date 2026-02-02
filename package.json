@@ -1,0 +1,17 @@
+{
+  "name": "openclaw-coolify",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "nexus:run": "bun run skills/nexus/scripts/run-recipe.ts",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "better-sqlite3": "^9.6.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.9",
+    "typescript": "^5.4.5"
+  }
+}
