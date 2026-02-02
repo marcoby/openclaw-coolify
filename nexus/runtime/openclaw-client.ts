@@ -119,6 +119,15 @@ export class OpenClawClient {
 
       if (!response.ok) {
         const errorText = await response.text().catch(() => "");
+
+        // Detect token/quota errors
+        if (response.status === 429 || errorText.toLowerCase().includes("quota")) {
+           throw new OpenClawError(`🛑 TOKEN QUOTA EXCEEDED: ${errorText}`, response.status);
+        }
+        if (errorText.includes("context_length_exceeded")) {
+           throw new OpenClawError(`🛑 CONTEXT WINDOW EXCEEDED: The history is too long for the model. ${errorText}`, response.status);
+        }
+
         throw new OpenClawError(
           `OpenClaw request failed (${response.status}): ${errorText}`,
           response.status
@@ -126,6 +135,13 @@ export class OpenClawClient {
       }
 
       const data = (await response.json()) as ChatResponse;
+
+      // Log Usage
+      if (data.usage) {
+        const { prompt_tokens, completion_tokens, total_tokens } = data.usage;
+        // Print to stderr to capture user attention without breaking stdout pipes
+        console.error(`[Token Usage] P: ${prompt_tokens} + C: ${completion_tokens} = ${total_tokens}`);
+      }
 
       // Extract content from OpenAI-style response
       const content = data.choices?.[0]?.message?.content;
