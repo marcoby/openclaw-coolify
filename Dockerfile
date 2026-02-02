@@ -98,22 +98,34 @@ WORKDIR /app
 # ✅ FINAL PATH (important)
 ENV PATH="/usr/local/go/bin:/usr/local/bin:/usr/bin:/bin:/root/.local/bin:/root/.npm-global/bin:/root/.bun/bin:/root/.bun/install/global/bin:/root/.claude/bin:/root/.kimi/bin:/root/go/bin"
 
-# OpenClaw install
-ARG OPENCLAW_BETA=false
-ENV OPENCLAW_BETA=${OPENCLAW_BETA} \
-    OPENCLAW_NO_ONBOARD=1 \
-    NPM_CONFIG_UNSAFE_PERM=true
+# OpenClaw install - Build from Marcoby source with custom branding
+ARG OPENCLAW_REPO=https://github.com/marcoby/openclaw.git
+ARG OPENCLAW_BRANCH=main
+ENV OPENCLAW_NO_ONBOARD=1 \
+    NPM_CONFIG_UNSAFE_PERM=true \
+    OPENCLAW_PREFER_PNPM=1
 
-RUN if [ "$OPENCLAW_BETA" = "true" ]; then \
-    npm install -g openclaw@beta; \
-    else \
-    npm install -g openclaw; \
-    fi && \
+# Enable corepack for pnpm
+RUN corepack enable
+
+# Copy Marcoby brand assets (logos) for UI build
+COPY assets/ /tmp/marcoby-assets/
+
+# Clone and build from source
+RUN echo "🦞 Building OpenClaw from source (${OPENCLAW_REPO}@${OPENCLAW_BRANCH})..." && \
+    git clone --depth 1 --branch ${OPENCLAW_BRANCH} ${OPENCLAW_REPO} /tmp/openclaw && \
+    cd /tmp/openclaw && \
+    echo "🎨 Copying Marcoby brand assets..." && \
+    cp -v /tmp/marcoby-assets/*.png ui/public/ 2>/dev/null || true && \
+    pnpm install --frozen-lockfile && \
+    OPENCLAW_A2UI_SKIP_MISSING=1 pnpm build && \
+    pnpm ui:build && \
+    npm link && \
     if command -v openclaw >/dev/null 2>&1; then \
-    echo "✅ openclaw binary found"; \
+        echo "✅ openclaw binary found (built from source with Marcoby branding)"; \
     else \
-    echo "❌ OpenClaw install failed (binary 'openclaw' not found)"; \
-    exit 1; \
+        echo "❌ OpenClaw build failed (binary 'openclaw' not found)"; \
+        exit 1; \
     fi
 
 RUN bun pm -g untrusted
