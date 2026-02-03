@@ -6,6 +6,18 @@ services:
       - registry-data:/var/lib/registry
     environment:
       REGISTRY_HTTP_SECRET: ${SERVICE_BASE64_REGISTRY}
+  # Public edge for the OpenClaw gateway.
+  # Provides a stable JSON /healthz endpoint and proxies everything else to the gateway.
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "18789:18789"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+    depends_on:
+      - openclaw
+
   openclaw:
     # Use prebuilt image with Marcoby branding (recommended):
     image: ${OPENCLAW_IMAGE:-ghcr.io/marcoby/openclaw-coolify:latest}
@@ -22,7 +34,8 @@ services:
     environment:
       DOCKER_HOST: tcp://docker-proxy:2375
       OPENCLAW_ENABLE_WEBHOOK_PROXY: "1"
-      PORT: 18789
+      # IMPORTANT: Gateway runs on 18790 internally; Caddy listens on 18789 and proxies to it.
+      PORT: 18790
       NODE_ENV: production
       NODE_OPTIONS: '--max-old-space-size=4096'
       HOME: /root
@@ -36,7 +49,7 @@ services:
       
       # Map OpenClaw vars
       OPENCLAW_GATEWAY_BIND: lan
-      OPENCLAW_GATEWAY_PORT: ${OPENCLAW_GATEWAY_PORT:-18789}
+      OPENCLAW_GATEWAY_PORT: ${OPENCLAW_GATEWAY_PORT:-18790}
       # Tell the binary where to look for state/config
       OPENCLAW_STATE_DIR: /root/.openclaw
       OPENCLAW_WORKSPACE: /root/openclaw-workspace
@@ -80,8 +93,7 @@ services:
       # Optional
       OPENCLAW_BETA: ${OPENCLAW_BETA:-false}
 
-    ports:
-      - "18789:18789"
+    # No public port here; Caddy publishes 18789 and proxies to the gateway.
 
     volumes:
       - openclaw-config:/root/.openclaw

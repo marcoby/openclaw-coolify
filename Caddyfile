@@ -1,0 +1,19 @@
+{
+  # Minimal config for internal reverse proxy
+  auto_https off
+}
+
+:18789 {
+  encode gzip zstd
+
+  @healthz path /healthz
+  respond @healthz 200 {
+    body "{\"ok\":true,\"service\":\"openclaw-coolify\"}"
+    close
+    header Content-Type application/json
+    header Cache-Control no-store
+  }
+
+  # Proxy everything else to the OpenClaw gateway
+  reverse_proxy openclaw:18790
+}
