@@ -146,7 +146,7 @@ RUN ln -sf /data/.claude/bin/claude /usr/local/bin/claude 2>/dev/null || true &&
     chmod +x /app/scripts/*.sh /usr/local/bin/openclaw-approve
 
 # ✅ FINAL PATH (important)
-ENV PATH="/usr/local/go/bin:/usr/local/bin:/usr/bin:/bin:/data/.local/bin:/data/.npm-global/bin:/data/.bun/bin:/data/.bun/install/global/bin:/data/.claude/bin:/data/.kimi/bin:/root/go/bin"
+ENV PATH="/usr/local/go/bin:/usr/local/bin:/usr/bin:/bin:/data/.local/bin:/data/.npm-global/bin:/data/.bun/bin:/data/.bun/install/global/bin:/data/.claude/bin:/data/.kimi/bin"
 
 EXPOSE 18789
 CMD ["bash", "/app/scripts/bootstrap.sh"]
