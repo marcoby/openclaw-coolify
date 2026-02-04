@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 set -e
 
-OPENCLAW_STATE="/root/.openclaw"
+if [ -f "/app/scripts/migrate-to-data.sh" ]; then
+    bash "/app/scripts/migrate-to-data.sh"
+fi
+
+OPENCLAW_STATE="${OPENCLAW_STATE_DIR:-/data/.openclaw}"
 CONFIG_FILE="$OPENCLAW_STATE/openclaw.json"
-WORKSPACE_DIR="/root/openclaw-workspace"
-
-
+WORKSPACE_DIR="${OPENCLAW_WORKSPACE:-/data/openclaw-workspace}"
 
 mkdir -p "$OPENCLAW_STATE" "$WORKSPACE_DIR"
 chmod 700 "$OPENCLAW_STATE"
@@ -14,16 +16,22 @@ mkdir -p "$OPENCLAW_STATE/credentials"
 mkdir -p "$OPENCLAW_STATE/agents/main/sessions"
 chmod 700 "$OPENCLAW_STATE/credentials"
 
+for dir in .agents .ssh .config .local .cache .npm .bun .claude .kimi; do
+    if [ ! -L "/root/$dir" ] && [ ! -e "/root/$dir" ]; then
+        ln -sf "/data/$dir" "/root/$dir"
+    fi
+done
+
 # ----------------------------
 # Seed Agent Workspaces
 # ----------------------------
 seed_agent() {
   local id="$1"
   local name="$2"
-  local dir="/root/openclaw-$id"
+  local dir="/data/openclaw-$id"
 
   if [ "$id" = "main" ]; then
-    dir="/root/openclaw-workspace"
+    dir="${OPENCLAW_WORKSPACE:-/data/openclaw-workspace}"
   fi
 
   mkdir -p "$dir"
@@ -132,7 +140,7 @@ if [ ! -f "$CONFIG_FILE" ]; then
       }
     },
     "list": [
-      { "id": "main","default": true, "name": "default",  "workspace": "/root/openclaw-workspace"}
+      { "id": "main","default": true, "name": "default",  "workspace": "${OPENCLAW_WORKSPACE:-/data/openclaw-workspace}"}
     ]
   }
 }
@@ -175,7 +183,7 @@ ulimit -n 65535
 # ----------------------------
 # Try to extract existing token if not already set (e.g. from previous run)
 if [ -f "$CONFIG_FILE" ]; then
-    SAVED_TOKEN=$(grep -o '"token": "[^"]*"' "$CONFIG_FILE" | cut -d'"' -f4)
+    SAVED_TOKEN=$(jq -r '.gateway.auth.token // empty' "$CONFIG_FILE" 2>/dev/null || grep -o '"token": "[^"]*"' "$CONFIG_FILE" | tail -1 | cut -d'"' -f4)
     if [ -n "$SAVED_TOKEN" ]; then
         TOKEN="$SAVED_TOKEN"
     fi

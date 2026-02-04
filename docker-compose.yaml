@@ -24,21 +24,24 @@ services:
       PORT: 18789
       NODE_ENV: production
       NODE_OPTIONS: '--max-old-space-size=4096'
-      HOME: /root
+      HOME: /data
       TERM: xterm-256color
       # Persistence: Command History
-      HISTFILE: /root/.openclaw/.bash_history
+      HISTFILE: /data/.bash_history
       HISTSIZE: 50000
       HISTSAVE: 50000
       HISTCONTROL: ignoreboth
-
-      
+      XDG_CONFIG_HOME: /data/.config
+      XDG_DATA_HOME: /data/.local/share
+      XDG_CACHE_HOME: /data/.cache
+      NPM_CONFIG_CACHE: /data/.npm
+      BUN_INSTALL: /data/.bun
       # Map OpenClaw vars
       OPENCLAW_GATEWAY_BIND: lan
       OPENCLAW_GATEWAY_PORT: ${OPENCLAW_GATEWAY_PORT:-18789}
       # Tell the binary where to look for state/config
-      OPENCLAW_STATE_DIR: /root/.openclaw
-      OPENCLAW_WORKSPACE: /root/openclaw-workspace
+      OPENCLAW_STATE_DIR: /data/.openclaw
+      OPENCLAW_WORKSPACE: /data/openclaw-workspace
 
       # API Keys injected from .env or Coolify
       OPENAI_API_KEY: ${OPENAI_API_KEY}
@@ -80,9 +83,9 @@ services:
       OPENCLAW_BETA: ${OPENCLAW_BETA:-false}
 
     volumes:
+      - openclaw-data:/data
       - openclaw-config:/root/.openclaw
       - openclaw-workspace:/root/openclaw-workspace
-
 
       # Secure: Socket mount removed in favor of proxy
       # - /var/run/docker.sock:/var/run/docker.sock
@@ -104,7 +107,6 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:
-      LOG_LEVEL: info
       # Security: Only enable necessary Docker APIs
       POST: 1       # Create containers
       CONTAINERS: 1 # List/manage containers
@@ -120,14 +122,11 @@ services:
       context: .
       dockerfile: searxng/Dockerfile
     restart: unless-stopped
-
     volumes:
       - searxng-data:/var/lib/searxng
-
     environment:
       SEARXNG_BASE_URL: http://searxng:8080
       SEARXNG_SERVER_SECRET_KEY: ${SERVICE_BASE64_SEARXNG}
-
     cap_drop:
       - ALL
     cap_add:
@@ -135,8 +134,8 @@ services:
       - SETGID
       - SETUID
 
-
 volumes:
+  openclaw-data:
   openclaw-config:
   openclaw-workspace:
   searxng-data:
