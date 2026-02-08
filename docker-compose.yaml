@@ -50,6 +50,8 @@ services:
     volumes:
       - 'openclaw-data:/data'
       - 'openclaw-workspace:/root/openclaw-workspace'
+    ports:
+      - '18790:18790' # Exposed for Cloudflare tunnel access
     depends_on:
       docker-proxy:
         condition: service_healthy
