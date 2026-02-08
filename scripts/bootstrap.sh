@@ -1,10 +1,27 @@
 #!/usr/bin/env bash
 set -e
 
-if [ -f "/app/scripts/migrate-to-data.sh" ]; then
-    bash "/app/scripts/migrate-to-data.sh"
+# ------------------------------------------------------------------
+# 🛡️ RESILIENCE: Wait for Docker Proxy
+# ------------------------------------------------------------------
+WAIT_COUNT=0
+MAX_WAIT=30
+echo "⏳ Waiting for docker-proxy to be resolvable and reachable..."
+until nc -z docker-proxy 2375 >/dev/null 2>&1 || [ $WAIT_COUNT -eq $MAX_WAIT ]; do
+  sleep 2
+  WAIT_COUNT=$((WAIT_COUNT + 1))
+  echo "   [attempt $WAIT_COUNT/$MAX_WAIT] Waiting for tcp://docker-proxy:2375..."
+done
+
+if [ $WAIT_COUNT -eq $MAX_WAIT ]; then
+  echo "⚠️  WARNING: docker-proxy not reached. Sandbox features may fail."
+else
+  echo "✅ docker-proxy is UP."
 fi
 
+# ------------------------------------------------------------------
+# CONFIGURATION
+# ------------------------------------------------------------------
 OPENCLAW_STATE="${OPENCLAW_STATE_DIR:-/data/.openclaw}"
 CONFIG_FILE="$OPENCLAW_STATE/openclaw.json"
 WORKSPACE_DIR="${OPENCLAW_WORKSPACE:-/data/openclaw-workspace}"
@@ -16,15 +33,16 @@ mkdir -p "$OPENCLAW_STATE/credentials"
 mkdir -p "$OPENCLAW_STATE/agents/main/sessions"
 chmod 700 "$OPENCLAW_STATE/credentials"
 
+# Map data dirs to home for tool compatibility
 for dir in .agents .ssh .config .local .cache .npm .bun .claude .kimi; do
     if [ ! -L "/root/$dir" ] && [ ! -e "/root/$dir" ]; then
         ln -sf "/data/$dir" "/root/$dir"
     fi
 done
 
-# ----------------------------
-# Seed Agent Workspaces
-# ----------------------------
+# ------------------------------------------------------------------
+# 🧠 MARCOBY LOGIC: Seed Agent Workspaces
+# ------------------------------------------------------------------
 seed_agent() {
   local id="$1"
   local name="$2"
@@ -36,26 +54,27 @@ seed_agent() {
 
   mkdir -p "$dir"
 
-  # 🔒 NEVER overwrite existing SOUL.md
+  # ✅ MAIN agent ALWAYS gets ORIGINAL repo SOUL.md and BOOTSTRAP.md
+  # We force overwrite for the main agent to ensure updates propogate
+  if [ "$id" = "main" ]; then
+    if [ -f "./SOUL.md" ]; then
+      echo "✨ Syncing SOUL.md to $dir (Marcoby Force-Sync)"
+      cp -f "./SOUL.md" "$dir/SOUL.md"
+    fi
+    if [ -f "./BOOTSTRAP.md" ]; then
+      echo "🚀 Syncing BOOTSTRAP.md to $dir"
+      cp -f "./BOOTSTRAP.md" "$dir/BOOTSTRAP.md"
+    fi
+    return 0
+  fi
+
+  # 🔒 For other agents: NEVER overwrite existing SOUL.md
   if [ -f "$dir/SOUL.md" ]; then
     echo "🧠 SOUL.md already exists for $id — skipping"
     return 0
   fi
 
-  # ✅ MAIN agent gets ORIGINAL repo SOUL.md and BOOTSTRAP.md
-  if [ "$id" = "main" ]; then
-    if [ -f "./SOUL.md" ] && [ ! -f "$dir/SOUL.md" ]; then
-      echo "✨ Copying original SOUL.md to $dir"
-      cp "./SOUL.md" "$dir/SOUL.md"
-    fi
-    if [ -f "./BOOTSTRAP.md" ] && [ ! -f "$dir/BOOTSTRAP.md" ]; then
-      echo "🚀 Seeding BOOTSTRAP.md to $dir"
-      cp "./BOOTSTRAP.md" "$dir/BOOTSTRAP.md"
-    fi
-    return 0
-  fi
-
-  # fallback for other agents
+  # Fallback for other agents
   cat >"$dir/SOUL.md" <<EOF
 # SOUL.md - $name
 You are OpenClaw, a helpful and premium AI assistant.
@@ -145,6 +164,37 @@ if [ ! -f "$CONFIG_FILE" ]; then
   }
 }
 EOF
+fi
+
+# ------------------------------------------------------------------
+# 🔄 ENFORCEMENT: Environment Overrides openclaw.json
+# ------------------------------------------------------------------
+if [ -f "$CONFIG_FILE" ]; then
+    echo "🔄 Enforcing Nexus/Marcoby configuration in openclaw.json..."
+    
+    # 1. Fallback Construction
+    FALLBACKS_ARRAY=()
+    [ -n "$OPENAI_API_KEY" ] && FALLBACKS_ARRAY+=("\"openai/gpt-4o-mini\"" "\"openai/gpt-4o\"")
+    [ -n "$GEMINI_API_KEY" ] && FALLBACKS_ARRAY+=("\"google/gemini-2.0-flash-exp\"" "\"google/gemini-1.5-pro\"")
+    [ -n "$ANTHROPIC_API_KEY" ] && FALLBACKS_ARRAY+=("\"anthropic/claude-3-5-sonnet-20241022\"")
+    
+    # Join array with commas
+    IFS=, ; FALLBACKS_STRING="${FALLBACKS_ARRAY[*]}" ; unset IFS
+    GENERATED_FALLBACKS="[$FALLBACKS_STRING]"
+    
+    if [ "$GENERATED_FALLBACKS" == "[]" ]; then
+       GENERATED_FALLBACKS='["google/gemini-2.0-flash-exp", "anthropic/claude-3-5-sonnet-20241022", "openai/gpt-4o-mini"]'
+    fi
+    
+    FINAL_FALLBACKS="${OPENCLAW_AGENTS_DEFAULTS_MODEL_FALLBACKS:-$GENERATED_FALLBACKS}"
+    
+    # 2. Apply Overrides
+    jq --arg model "${OPENCLAW_AGENTS_DEFAULTS_MODEL_PRIMARY:-google/gemini-2.0-flash-exp}" \
+       --argjson fallbacks "$FINAL_FALLBACKS" \
+       --arg token "${OPENCLAW_GATEWAY_TOKEN:-sk-openclaw-local}" \
+       --arg port "${OPENCLAW_GATEWAY_PORT:-18790}" \
+       '.agents.defaults.model.primary = $model | .agents.defaults.model.fallbacks = $fallbacks | .gateway.auth.token = $token | .gateway.port = ($port|tonumber)' \
+       "$CONFIG_FILE" > "$CONFIG_FILE.tmp" && mv "$CONFIG_FILE.tmp" "$CONFIG_FILE"
 fi
 
 # ----------------------------

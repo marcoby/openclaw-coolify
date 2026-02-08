@@ -17,7 +17,18 @@ if docker image inspect "$TARGET_IMAGE" >/dev/null 2>&1; then
 fi
 
 echo "   Pulling $BASE_IMAGE..."
-docker pull "$BASE_IMAGE"
+RETRY_COUNT=0
+MAX_RETRIES=5
+until docker pull "$BASE_IMAGE" >/dev/null 2>&1 || [ $RETRY_COUNT -eq $MAX_RETRIES ]; do
+    RETRY_COUNT=$((RETRY_COUNT + 1))
+    echo "   [attempt $RETRY_COUNT/$MAX_RETRIES] Retrying pull $BASE_IMAGE..."
+    sleep 3
+done
+
+if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+    echo "❌ Failed to pull $BASE_IMAGE. Is docker-proxy healthy?"
+    exit 1
+fi
 
 echo "   Tagging as $TARGET_IMAGE..."
 docker tag "$BASE_IMAGE" "$TARGET_IMAGE"
