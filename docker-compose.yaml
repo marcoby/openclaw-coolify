@@ -123,6 +123,11 @@ services:
       VERSION: 1
       EXEC: 1 # Run commands (exec)
       EVENTS: 1 # Listen for events (if needed)
+
+      # Resiliency: HAProxy Timeouts
+      TIMEOUT_CONNECT: 5s
+      TIMEOUT_CLIENT: 2m
+      TIMEOUT_SERVER: 2m
     healthcheck:
       test: [ "CMD", "nc", "-z", "localhost", "2375" ]
       interval: 10s

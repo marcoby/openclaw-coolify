@@ -188,12 +188,12 @@ if [ -f "$CONFIG_FILE" ]; then
     
     FINAL_FALLBACKS="${OPENCLAW_AGENTS_DEFAULTS_MODEL_FALLBACKS:-$GENERATED_FALLBACKS}"
     
-    # 2. Apply Overrides
+    # 2. Apply Overrides (Aggressive)
     jq --arg model "${OPENCLAW_AGENTS_DEFAULTS_MODEL_PRIMARY:-google/gemini-2.0-flash-exp}" \
        --arg fallbacks "$FINAL_FALLBACKS" \
        --arg token "${OPENCLAW_GATEWAY_TOKEN:-sk-openclaw-local}" \
        --arg port "${OPENCLAW_GATEWAY_PORT:-18790}" \
-       '.agents.defaults.model.primary = $model | .agents.defaults.model.fallbacks = ($fallbacks | fromjson? // [$fallbacks]) | .gateway.auth.token = $token | .gateway.port = ($port|tonumber)' \
+       '.agents.defaults.model = $model | .agents.defaults.model.primary = $model | .agents.defaults.model.fallbacks = ($fallbacks | fromjson? // [$fallbacks]) | .gateway.auth.token = $token | .gateway.port = ($port|tonumber)' \
        "$CONFIG_FILE" > "$CONFIG_FILE.tmp" && mv "$CONFIG_FILE.tmp" "$CONFIG_FILE"
 fi
 
