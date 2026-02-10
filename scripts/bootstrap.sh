@@ -180,8 +180,8 @@ if [ -f "$CONFIG_FILE" ]; then
     
     # 1. Fallback Construction
     FALLBACKS_ARRAY=()
-    [ -n "$OPENAI_API_KEY" ] && FALLBACKS_ARRAY+=("\"openai/gpt-4o-mini\"" "\"openai/gpt-4o\"")
-    [ -n "$GEMINI_API_KEY" ] && FALLBACKS_ARRAY+=("\"google/gemini-2.0-flash-exp\"" "\"google/gemini-1.5-pro\"")
+    [ -n "$OPENROUTER_API_KEY" ] && FALLBACKS_ARRAY+=("\"openrouter/anthropic/claude-3.5-sonnet\"" "\"openrouter/openai/gpt-4o-mini\"")
+    [ -n "$OPENAI_API_KEY" ] && FALLBACKS_ARRAY+=("\"openai/gpt-4o-mini\"")
     [ -n "$ANTHROPIC_API_KEY" ] && FALLBACKS_ARRAY+=("\"anthropic/claude-3-5-sonnet-20241022\"")
     
     # Join array with commas
@@ -189,18 +189,20 @@ if [ -f "$CONFIG_FILE" ]; then
     GENERATED_FALLBACKS="[$FALLBACKS_STRING]"
     
     if [ "$GENERATED_FALLBACKS" == "[]" ]; then
-       GENERATED_FALLBACKS='["google/gemini-2.0-flash-exp", "anthropic/claude-3-5-sonnet-20241022", "openai/gpt-4o-mini"]'
+       GENERATED_FALLBACKS='["openrouter/anthropic/claude-3.5-sonnet", "openrouter/openai/gpt-4o-mini"]'
     fi
     
     FINAL_FALLBACKS="${OPENCLAW_AGENTS_DEFAULTS_MODEL_FALLBACKS:-$GENERATED_FALLBACKS}"
     
     # 2. Apply Overrides
-    jq --arg model "${OPENCLAW_AGENTS_DEFAULTS_MODEL_PRIMARY:-google/gemini-2.0-flash-exp}" \
+    # Default to OpenRouter Gemini Flash 2.0 if no primary model specified
+    jq --arg model "${OPENCLAW_AGENTS_DEFAULTS_MODEL_PRIMARY:-openrouter/google/gemini-2.0-flash-001}" \
        --arg fallbacks "$FINAL_FALLBACKS" \
        --arg token "${OPENCLAW_GATEWAY_TOKEN:-sk-openclaw-local}" \
        --arg port "${OPENCLAW_GATEWAY_PORT:-18790}" \
        --arg bind "${OPENCLAW_GATEWAY_BIND:-0.0.0.0}" \
-       '.agents.defaults.model = { "primary": $model, "fallbacks": ($fallbacks | fromjson? // [$fallbacks]) } | .gateway.auth.token = $token | .gateway.port = ($port|tonumber) | .gateway.bind = $bind | .gateway.http.endpoints.chatCompletions.enabled = true' \
+       --arg or_key "${OPENROUTER_API_KEY}" \
+       '.agents.defaults.model = { "primary": $model, "fallbacks": ($fallbacks | fromjson? // [$fallbacks]) } | .gateway.auth.token = $token | .gateway.port = ($port|tonumber) | .gateway.bind = $bind | .gateway.http.endpoints.chatCompletions.enabled = true | .env.OPENROUTER_API_KEY = $or_key' \
        "$CONFIG_FILE" > "$CONFIG_FILE.tmp" && mv "$CONFIG_FILE.tmp" "$CONFIG_FILE"
 fi
 
