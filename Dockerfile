@@ -106,8 +106,10 @@ RUN ln -s /usr/bin/fdfind /usr/bin/fd || true && \
 # Stage 4: Application dependencies (package installations)
 FROM runtimes AS dependencies
 
-# OpenClaw source build configuration
-ENV OPENCLAW_NO_ONBOARD=1 \
+# OpenClaw install
+ARG OPENCLAW_BETA=false
+ENV OPENCLAW_BETA=${OPENCLAW_BETA} \
+    OPENCLAW_NO_ONBOARD=1 \
     NPM_CONFIG_UNSAFE_PERM=true
 
 # Install Vercel, Marp, QMD with BuildKit cache mount for faster rebuilds
@@ -116,23 +118,25 @@ RUN --mount=type=cache,target=/data/.bun/install/cache \
     bun pm -g untrusted && \
     bun install -g @openai/codex @google/gemini-cli opencode-ai @steipete/summarize @hyperbrowser/agent clawhub
 
-# Install OpenClaw from source (marcoby fork) for latest fixes
-ARG OPENCLAW_REPO=https://github.com/marcoby/openclaw.git
-ARG OPENCLAW_BRANCH=main
+# Install OpenClaw with npm cache mount
 RUN --mount=type=cache,target=/data/.npm \
-    git clone --depth 1 --branch ${OPENCLAW_BRANCH} ${OPENCLAW_REPO} /tmp/openclaw-src && \
-    cd /tmp/openclaw-src && \
-    corepack enable && corepack prepare pnpm@10.23.0 --activate && \
-    pnpm install --frozen-lockfile && \
-    pnpm run build && \
-    npm install -g . && \
-    cd / && rm -rf /tmp/openclaw-src && \
-    if command -v openclaw >/dev/null 2>&1; then \
-    echo "✅ openclaw binary found (built from source)"; \
+    if [ "$OPENCLAW_BETA" = "true" ]; then \
+    npm install -g openclaw@beta; \
     else \
-    echo "❌ OpenClaw source build failed (binary 'openclaw' not found)"; \
+    npm install -g openclaw; \
+    fi && \
+    if command -v openclaw >/dev/null 2>&1; then \
+    echo "✅ openclaw binary found"; \
+    else \
+    echo "❌ OpenClaw install failed (binary 'openclaw' not found)"; \
     exit 1; \
     fi
+
+# Patch: extend claude-opus-4-6 forward-compat to google-antigravity provider
+# This adds google-antigravity support until upstream npm publishes the fix
+RUN find /usr/local/lib/node_modules/openclaw/dist -name '*.js' -exec \
+    sed -i 's/(normalizedProvider !== "anthropic") return;/(normalizedProvider !== "anthropic" \&\& normalizedProvider !== "google-antigravity") return;/g' {} + && \
+    echo "✅ Applied google-antigravity claude-opus-4-6 patch"
 
 # AI Tool Suite & ClawHub
 RUN curl -fsSL https://claude.ai/install.sh | bash && \
