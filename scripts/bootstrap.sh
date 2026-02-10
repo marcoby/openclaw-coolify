@@ -202,7 +202,7 @@ if [ -f "$CONFIG_FILE" ]; then
        --arg port "${OPENCLAW_GATEWAY_PORT:-18790}" \
        --arg bind "${OPENCLAW_GATEWAY_BIND:-0.0.0.0}" \
        --arg or_key "${OPENROUTER_API_KEY}" \
-       '.agents.defaults.model = { "primary": $model, "fallbacks": ($fallbacks | fromjson? // [$fallbacks]) } | .gateway.auth.token = $token | .gateway.port = ($port|tonumber) | .gateway.bind = $bind | .gateway.http.endpoints.chatCompletions.enabled = true | .env.OPENROUTER_API_KEY = $or_key' \
+       '.agents.defaults.model = { "primary": $model, "fallbacks": ($fallbacks | fromjson? // [$fallbacks]) } | .gateway.auth.token = $token | .gateway.port = ($port|tonumber) | .gateway.bind = $bind | .gateway.http.endpoints.chatCompletions.enabled = true | .env.OPENROUTER_API_KEY = $or_key | .agents.defaults.models[$model] = {} | reduce ($fallbacks | fromjson? // [$fallbacks])[] as $fb (.; .agents.defaults.models[$fb] = {})' \
        "$CONFIG_FILE" > "$CONFIG_FILE.tmp" && mv "$CONFIG_FILE.tmp" "$CONFIG_FILE"
 fi
 
