@@ -199,7 +199,8 @@ if [ -f "$CONFIG_FILE" ]; then
        --arg fallbacks "$FINAL_FALLBACKS" \
        --arg token "${OPENCLAW_GATEWAY_TOKEN:-sk-openclaw-local}" \
        --arg port "${OPENCLAW_GATEWAY_PORT:-18790}" \
-       '.agents.defaults.model = { "primary": $model, "fallbacks": ($fallbacks | fromjson? // [$fallbacks]) } | .gateway.auth.token = $token | .gateway.port = ($port|tonumber)' \
+       --arg bind "${OPENCLAW_GATEWAY_BIND:-0.0.0.0}" \
+       '.agents.defaults.model = { "primary": $model, "fallbacks": ($fallbacks | fromjson? // [$fallbacks]) } | .gateway.auth.token = $token | .gateway.port = ($port|tonumber) | .gateway.bind = $bind | .gateway.http.endpoints.chatCompletions.enabled = true' \
        "$CONFIG_FILE" > "$CONFIG_FILE.tmp" && mv "$CONFIG_FILE.tmp" "$CONFIG_FILE"
 fi
 
