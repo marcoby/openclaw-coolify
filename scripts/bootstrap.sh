@@ -195,8 +195,8 @@ if [ -f "$CONFIG_FILE" ]; then
     FINAL_FALLBACKS="${OPENCLAW_AGENTS_DEFAULTS_MODEL_FALLBACKS:-$GENERATED_FALLBACKS}"
     
     # 2. Apply Overrides
-    # Default to OpenRouter Gemini Flash 2.0 if no primary model specified
-    jq --arg model "${OPENCLAW_AGENTS_DEFAULTS_MODEL_PRIMARY:-openrouter/google/gemini-2.0-flash-001}" \
+    # Default to OpenRouter Gemini 2.5 Flash if no primary model specified
+    jq --arg model "${OPENCLAW_AGENTS_DEFAULTS_MODEL_PRIMARY:-openrouter/google/gemini-2.5-flash}" \
        --arg fallbacks "$FINAL_FALLBACKS" \
        --arg token "${OPENCLAW_GATEWAY_TOKEN:-sk-openclaw-local}" \
        --arg port "${OPENCLAW_GATEWAY_PORT:-18790}" \
