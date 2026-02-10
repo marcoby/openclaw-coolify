@@ -31,7 +31,6 @@ services:
       NODE_OPTIONS: '--max-old-space-size=4096'
       HOME: /data
       OPENCLAW_GATEWAY_TOKEN: sk-openclaw-local
-      OPENCLAW_AGENTS_DEFAULTS_MODEL_PRIMARY: google/gemini-2.0-flash-exp
       # Fixed the JSON-like string to avoid shell interpolation errors
       OPENCLAW_AGENTS_DEFAULTS_MODEL_FALLBACKS: '["openrouter/deepseek/deepseek-v3.2","openai/gpt-4o-mini","anthropic/claude-3-5-sonnet-20241022"]'
       OPENCLAW_GATEWAY_BIND: lan
