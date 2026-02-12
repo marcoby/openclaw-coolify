@@ -52,18 +52,17 @@ RUN install -m 0755 -d /etc/apt/keyrings && \
     apt-get install -y docker-ce-cli && \
     rm -rf /var/lib/apt/lists/*
 
-# Install Go (Latest)
-RUN ARCH=$(dpkg --print-architecture) && \
+# Install Go and Cloudflare Tunnel
+RUN ls -la /bin/sh && \
+    ARCH=$(dpkg --print-architecture) && \
     if [ "$ARCH" = "amd64" ]; then GO_ARCH="amd64"; else GO_ARCH="arm64"; fi && \
     curl -fsSL "https://go.dev/dl/go1.23.4.linux-${GO_ARCH}.tar.gz" -o go.tar.gz && \
     tar -C /usr/local -xzf go.tar.gz && \
-    rm go.tar.gz
-
-# Install Cloudflare Tunnel (cloudflared)
-RUN ARCH=$(dpkg --print-architecture) && \
+    rm go.tar.gz && \
     curl -fsSL --output cloudflared.deb "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-${ARCH}.deb" && \
     dpkg -i cloudflared.deb && \
-    rm cloudflared.deb
+    rm cloudflared.deb && \
+    ls -la /bin/sh
 
 # Install GitHub CLI (gh)
 RUN mkdir -p -m 755 /etc/apt/keyrings && \
