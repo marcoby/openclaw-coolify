@@ -255,7 +255,7 @@ if [ ! -f "$CONFIG_FILE" ]; then
     },
     "list": [
       { "id": "main","default": true, "name": "default",  "workspace": "${OPENCLAW_WORKSPACE:-/data/openclaw-workspace}"},
-      { "id": "nexus", "name": "Nexus Assistant", "workspace": "$NEXUS_WORKSPACE_DIR", "tools": { "profile": "minimal", "alsoAllow": ["nexus_*"] } }
+      { "id": "nexus", "name": "Nexus Assistant", "workspace": "$NEXUS_WORKSPACE_DIR", "sandbox": { "mode": "off" }, "tools": { "profile": "minimal", "alsoAllow": ["nexus_*"] } }
     ]
   }
 }
@@ -337,6 +337,7 @@ if [ -f "$CONFIG_FILE" ]; then
                    "id": "nexus",
                    "name": "Nexus Assistant",
                    "workspace": $nexus_workspace,
+                   "sandbox": { "mode": "off" },
                    "tools": { "profile": "minimal", "alsoAllow": ["nexus_*"] }
                  }
                ]
