@@ -117,13 +117,10 @@ RUN --mount=type=cache,target=/data/.bun/install/cache \
     bun pm -g untrusted && \
     bun install -g @openai/codex @google/gemini-cli opencode-ai @steipete/summarize @hyperbrowser/agent clawhub
 
-# Install OpenClaw with npm cache mount
+# Install pnpm and OpenClaw from Git branch (includes nexus tool fixes)
 RUN --mount=type=cache,target=/data/.npm \
-    if [ "$OPENCLAW_BETA" = "true" ]; then \
-    npm install -g openclaw@beta; \
-    else \
-    npm install -g openclaw; \
-    fi && \
+    npm install -g pnpm && \
+    npm install -g https://github.com/marcoby/openclaw.git#fix-nexus-tools && \
     if command -v openclaw >/dev/null 2>&1; then \
     echo "✅ openclaw binary found"; \
     else \
