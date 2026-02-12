@@ -15,7 +15,25 @@ until nc -z docker-proxy 2375 >/dev/null 2>&1 || [ $WAIT_COUNT -eq $MAX_WAIT ]; 
 done
 
 if ! nc -z docker-proxy 2375 >/dev/null 2>&1; then
-  echo "⚠️  WARNING: docker-proxy not reached. Sandbox features may fail."
+  echo "⏳ docker-proxy not reached yet. Will re-check in background (sandbox may be temporarily unavailable)."
+
+  # Defer warning so we don't spam on cold-start races.
+  # If docker-proxy becomes reachable shortly after startup, we'll log success instead.
+  (
+    GRACE_SEC="${OPENCLAW_DOCKER_PROXY_GRACE_SEC:-60}"
+    INTERVAL_SEC="${OPENCLAW_DOCKER_PROXY_RETRY_INTERVAL_SEC:-2}"
+    deadline=$(( $(date +%s) + GRACE_SEC ))
+
+    while [ "$(date +%s)" -lt "$deadline" ]; do
+      if nc -z docker-proxy 2375 >/dev/null 2>&1; then
+        echo "✅ docker-proxy is UP (post-startup)."
+        exit 0
+      fi
+      sleep "$INTERVAL_SEC"
+    done
+
+    echo "⚠️  WARNING: docker-proxy still not reachable after ${GRACE_SEC}s. Sandbox features may fail."
+  ) &
 else
   echo "✅ docker-proxy is UP."
 fi
