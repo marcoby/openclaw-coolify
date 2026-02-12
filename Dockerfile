@@ -55,13 +55,13 @@ RUN install -m 0755 -d /etc/apt/keyrings && \
 # Install Go (Latest)
 RUN ARCH=$(dpkg --print-architecture) && \
     if [ "$ARCH" = "amd64" ]; then GO_ARCH="amd64"; else GO_ARCH="arm64"; fi && \
-    curl -L "https://go.dev/dl/go1.23.4.linux-${GO_ARCH}.tar.gz" -o go.tar.gz && \
+    curl -fsSL "https://go.dev/dl/go1.23.4.linux-${GO_ARCH}.tar.gz" -o go.tar.gz && \
     tar -C /usr/local -xzf go.tar.gz && \
     rm go.tar.gz
 
 # Install Cloudflare Tunnel (cloudflared)
 RUN ARCH=$(dpkg --print-architecture) && \
-    curl -L --output cloudflared.deb "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-${ARCH}.deb" && \
+    curl -fsSL --output cloudflared.deb "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-${ARCH}.deb" && \
     dpkg -i cloudflared.deb && \
     rm cloudflared.deb
 
@@ -140,7 +140,7 @@ RUN find /usr/local/lib/node_modules/openclaw/dist -name '*.js' -exec \
 
 # AI Tool Suite & ClawHub
 RUN curl -fsSL https://claude.ai/install.sh | bash && \
-    curl -L https://code.kimi.com/install.sh | bash
+    curl -fsSL https://code.kimi.com/install.sh | bash
 
 # Stage 5: Final application stage (changes frequently)
 FROM dependencies AS final
