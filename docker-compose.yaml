@@ -10,10 +10,8 @@ services:
       REGISTRY_HTTP_SECRET: '${SERVICE_BASE64_REGISTRY}'
 
   openclaw:
-    build:
-      context: .
-      args:
-        - 'OPENCLAW_BETA=${OPENCLAW_BETA:-false}'
+    image: '${OPENCLAW_UPSTREAM_IMAGE:?Set OPENCLAW_UPSTREAM_IMAGE to an upstream image digest}'
+    pull_policy: always
     restart: 'on-failure:10'
     networks:
       - coolify
@@ -49,6 +47,7 @@ services:
     volumes:
       - 'openclaw-data:/data'
       - 'openclaw-workspace:/root/openclaw-workspace'
+      - '.:/opt/openclaw-coolify:ro'
     ports:
       - '18790:18790' # Exposed for Cloudflare tunnel access
     depends_on:
@@ -56,7 +55,7 @@ services:
         condition: service_healthy
     command:
       - bash
-      - /app/scripts/bootstrap.sh
+      - /opt/openclaw-coolify/scripts/bootstrap.sh
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:18790/" ]
       interval: 30s
