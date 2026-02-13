@@ -10,8 +10,10 @@ services:
       REGISTRY_HTTP_SECRET: '${SERVICE_BASE64_REGISTRY}'
 
   openclaw:
-    image: '${OPENCLAW_UPSTREAM_IMAGE:?Set OPENCLAW_UPSTREAM_IMAGE to an upstream image digest}'
-    pull_policy: always
+    build:
+      context: .
+      args:
+        - 'OPENCLAW_BETA=${OPENCLAW_BETA:-false}'
     restart: 'on-failure:10'
     networks:
       - coolify
@@ -29,7 +31,6 @@ services:
       NODE_OPTIONS: '--max-old-space-size=4096'
       HOME: /data
       OPENCLAW_GATEWAY_TOKEN: sk-openclaw-local
-      # Fixed the JSON-like string to avoid shell interpolation errors
       OPENCLAW_AGENTS_DEFAULTS_MODEL_FALLBACKS: '["openrouter/deepseek/deepseek-v3.2","openai/gpt-4o-mini","anthropic/claude-3-5-sonnet-20241022"]'
       OPENCLAW_GATEWAY_BIND: lan
       OPENCLAW_GATEWAY_PORT: '${OPENCLAW_GATEWAY_PORT:-18790}'
@@ -47,7 +48,6 @@ services:
     volumes:
       - 'openclaw-data:/data'
       - 'openclaw-workspace:/root/openclaw-workspace'
-      - '.:/opt/openclaw-coolify:ro'
     ports:
       - '18790:18790' # Exposed for Cloudflare tunnel access
     depends_on:
@@ -55,7 +55,7 @@ services:
         condition: service_healthy
     command:
       - bash
-      - /opt/openclaw-coolify/scripts/bootstrap.sh
+      - /app/scripts/bootstrap.sh
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:18790/" ]
       interval: 30s
