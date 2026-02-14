@@ -133,14 +133,26 @@ You are the Nexus Executive Assistant running inside the Marcoby Nexus product.
 
 ## Core Behavior
 
-- Prefer Nexus tools over guessing.
+- You are an AGENTIC assistant with REAL execution capabilities. Take action, don't just suggest.
 - Be concise and operational.
+- Never claim you lack access or cannot perform an action. Use your tools.
 - Never claim an integration is connected/expired unless you just verified it using a Nexus tool.
 
-## Nexus Tools
+## Available Tools
 
-When the user asks anything about inbox/email/OAuth/integrations, you MUST use the Nexus tools:
+You have access to a full suite of tools. USE THEM:
 
+### Core Tools (always available)
+- exec: Run shell commands (git clone, npm install, scripts, system operations)
+- read: Read files from the workspace
+- write: Create or overwrite files
+- edit: Make targeted edits to existing files
+- apply_patch: Apply structured multi-file edits
+- browser: Browse web pages and extract content
+- sessions_list / sessions_history / sessions_send / sessions_spawn: Session management
+
+### Nexus Integration Tools
+When the user asks about inbox/email/OAuth/integrations, use these:
 - nexus_get_integration_status
 - nexus_resolve_email_provider
 - nexus_start_email_connection
@@ -148,6 +160,12 @@ When the user asks anything about inbox/email/OAuth/integrations, you MUST use t
 - nexus_search_emails
 - nexus_disconnect_integration
 - nexus_connect_imap (only if OAuth is unavailable)
+
+### Skills (when available)
+- web_search: Search the live internet for current information
+- advanced_scrape: Extract data from specific URLs
+- create_skill: Generate new automated capabilities
+- list_skills / search_skills / install_skill: Manage skills
 
 ## Tool Disclosure (Required)
 
@@ -197,6 +215,9 @@ if [ ! -f "$CONFIG_FILE" ]; then
         "enabled": true
       },
       "google-antigravity-auth": {
+        "enabled": true
+      },
+      "nexus-toolbridge": {
         "enabled": true
       }
     }
@@ -273,7 +294,7 @@ if [ ! -f "$CONFIG_FILE" ]; then
     },
     "list": [
       { "id": "main","default": true, "name": "default",  "workspace": "${OPENCLAW_WORKSPACE:-/data/openclaw-workspace}"},
-      { "id": "nexus", "name": "Nexus Assistant", "workspace": "$NEXUS_WORKSPACE_DIR", "sandbox": { "mode": "off" }, "tools": { "profile": "minimal", "alsoAllow": ["nexus_*"] } }
+      { "id": "nexus", "name": "Nexus Assistant", "workspace": "$NEXUS_WORKSPACE_DIR", "sandbox": { "mode": "off" }, "tools": { "profile": "full", "alsoAllow": ["nexus_*"] } }
     ]
   }
 }
@@ -318,6 +339,7 @@ if [ -f "$CONFIG_FILE" ]; then
          | .gateway.bind = $bind
          | .gateway.http.endpoints.chatCompletions.enabled = true
          | .env.OPENROUTER_API_KEY = $or_key
+         | .plugins.entries."nexus-toolbridge".enabled = true
          | .agents.defaults.models[$model] = {}
          | reduce ($fallbacks | fromjson? // [$fallbacks])[] as $fb (.; .agents.defaults.models[$fb] = {})
          # Ensure sandboxed sessions can call Nexus tools (non-main agents run in sandbox by default).
@@ -346,7 +368,7 @@ if [ -f "$CONFIG_FILE" ]; then
              ) + ["nexus_*"]
              | unique
            )
-         # Ensure a dedicated Nexus agent exists with a minimal tool surface.
+         # Ensure a dedicated Nexus agent exists with full tools + Nexus bridged tools.
          | .agents.list = (
              (.agents.list // [])
              | map(select(.id != "nexus"))
@@ -356,7 +378,7 @@ if [ -f "$CONFIG_FILE" ]; then
                    "name": "Nexus Assistant",
                    "workspace": $nexus_workspace,
                    "sandbox": { "mode": "off" },
-                   "tools": { "profile": "minimal", "alsoAllow": ["nexus_*"] }
+                   "tools": { "profile": "full", "alsoAllow": ["nexus_*"] }
                  }
                ]
            )
