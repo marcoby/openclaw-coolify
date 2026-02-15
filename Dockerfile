@@ -4,7 +4,7 @@
 # BuildKit features: cache mounts, parallel builds, improved layer caching
 
 # Stage 1: Base system dependencies (rarely changes)
-FROM node:lts-bookworm-slim AS base
+FROM --platform=linux/amd64 node:lts-bookworm-slim AS base
 
 # Prevent interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive \
@@ -64,20 +64,14 @@ RUN ls -la /bin/sh && \
     rm cloudflared.deb && \
     ls -la /bin/sh
 
-# Install GitHub CLI (gh) with a robust fallback to the .deb release
-RUN set -eux; \
-        mkdir -p -m 755 /etc/apt/keyrings; \
-        if wget -qO- https://cli.github.com/packages/githubcli-archive-keyring.gpg | tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null; then \
-            chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg; \
-            echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null; \
-            apt-get update; apt-get install -y gh; rm -rf /var/lib/apt/lists/*; \
-        else \
-            echo "Keyring fetch failed; falling back to .deb from CLI releases"; \
-            ARCH=$(dpkg --print-architecture); \
-            GH_VER=$(curl -fsSL https://api.github.com/repos/cli/cli/releases/latest | jq -r '.tag_name' | sed 's/^v//'); \
-            wget -qO /tmp/gh.deb "https://github.com/cli/cli/releases/download/v${GH_VER}/gh_${GH_VER}_linux_${ARCH}.deb"; \
-            apt-get update; apt-get install -y /tmp/gh.deb; rm -f /tmp/gh.deb; rm -rf /var/lib/apt/lists/*; \
-        fi
+# Install GitHub CLI (gh)
+RUN mkdir -p -m 755 /etc/apt/keyrings && \
+    wget -qO- https://cli.github.com/packages/githubcli-archive-keyring.gpg | tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null && \
+    chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null && \
+    apt-get update && \
+    apt-get install -y gh && \
+    rm -rf /var/lib/apt/lists/*
 
 # Install uv (Python tool manager)
 ENV UV_INSTALL_DIR="/usr/local/bin"
